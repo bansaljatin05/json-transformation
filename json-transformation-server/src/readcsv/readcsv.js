@@ -2,9 +2,9 @@ const csv = require('csv-parser')
 var jsonata = require("jsonata");
 const {NumberAddition,
   StringConcat,
-  shift}=require('../utils/TransformUtils');
+  shift,enumGenerator}=require('../utils/TransformUtils');
 const fs = require('fs');
-const { type } = require('os');
+
 const results = [];
 const sourceJSON={
   "id": "122-34-6543",
@@ -19,6 +19,8 @@ const sourceJSON={
   "occupation": "self-employed",
   "age": 29
 }
+
+
 const targetJSON={}
 let specJSONString="{";
 
@@ -26,7 +28,7 @@ fs.createReadStream('../../../data/sample_1/mapping.csv')
   .pipe(csv())
   .on('data', (data) => results.push(data))
   .on('end', () => {
-    // console.log(results);
+    console.log(results);
     for(let i=0 ;i<results.length;i++){
         let value = results[i][" Source"];
         if(!value.includes('(')){
@@ -57,7 +59,7 @@ fs.createReadStream('../../../data/sample_1/mapping.csv')
         // console.log(specJSONString);
 
     }else if(value.includes('ENUM')){
-      
+      console.log(value)
       let enum_key = value.match("(?<=\.|^)[^.]+$")[0].slice(0,-1);
 
       let enum_original_value = sourceJSON[enum_key];
@@ -67,13 +69,13 @@ fs.createReadStream('../../../data/sample_1/mapping.csv')
 
 
       let arr = enumeration.replaceAll(",\"",",");
-
+      console.log("hi",arr)
       enum_obj=JSON.parse(arr)
-
+      //console.log(enumGenerator(enum_obj,i,enum_key))
 
       specJSONString+=`\'${results[i].Target}\'`
       specJSONString+=":";
-      specJSONString+= `\"${enum_obj[enum_original_value]}\"`;
+      specJSONString+= enumGenerator(enum_obj,i,enum_key);
 
       console.log(enum_obj[enum_original_value]);
       if(i==results.length-1){
