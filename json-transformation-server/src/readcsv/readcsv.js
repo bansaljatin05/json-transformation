@@ -2,13 +2,15 @@ const csv = require('csv-parser')
 var jsonata = require("jsonata");
 const {NumberAddition,
   StringConcat,
-  shift,enumGenerator}=require('../utils/TransformUtils');
+  enumGenerator,
+  shift}=require('../utils/TransformUtils');
 const fs = require('fs');
 const { type } = require('os');
 const { bool } = require('joi');
 const results = [];
 const sourceJSON={
   "id": "122-34-6543",
+  "region": "NA",
   "firstName": "Leanne",
   "lastName": "Graham",
   "address": {
@@ -17,15 +19,53 @@ const sourceJSON={
       "city": "Gwenborough",
       "zipcode": "92998-3874"
   },
-  "occupation": "salaried",
-  "age": 29
+  "occupation": "self-employed",
+  "age": 29,
+  "loanHistory": [
+      {
+          "princicpal": 40000,
+          "periodInYears": "3",
+          "rateOfInterest": 10,
+          "collateral": [
+              {
+                  "assetName": "property",
+                  "estimatedValues": 70000
+              }
+          ]
+      },
+      {
+          "princicpal": 140000,
+          "periodInYears": "4",
+          "rateOfInterest": 12,
+          "isCommercial": true,
+          "collateral": [
+              {
+                  "assetName": "condo",
+                  "estimatedValues": 30000
+              },
+              {
+                  "assetName": "vehicle",
+                  "estimatedValues": 3000
+              }
+          ]
+      },
+      {
+          "princicpal": 60000,
+          "periodInYears": "4",
+          "rateOfInterest": 12,
+          "collateral": [
+              {
+                  "assetName": "jewellery",
+                  "estimatedValues": 30000
+              }
+          ]
+      }
+  ]
 }
-
-
 const targetJSON={}
 let specJSONString="{";
 
-fs.createReadStream('../../../data/sample_1/mapping.csv')
+fs.createReadStream('../../../data/sample_2/mapping.csv')
   .pipe(csv())
   .on('data', (data) =>{
     let str = JSON.stringify(data);
@@ -119,6 +159,7 @@ fs.createReadStream('../../../data/sample_1/mapping.csv')
   .on('end', () => {
     console.log(results);
     for(let i=0 ;i<results.length;i++){
+      let final_value="";
         let value = results[i][" Source"];
         if(!value.includes('(')){
         value = value.trim();
@@ -150,26 +191,39 @@ fs.createReadStream('../../../data/sample_1/mapping.csv')
     }else if(value.includes('ENUM')){
       let enum_key;
       let enumeration;
-      // if(value.includes("+")){
-      //   let aop = value.split("+");
-      //   console.log(aop);
-      //   let ek={};
-      //   for(let m=0;m<aop.length;m++){
-      //     let z;
-      //     if(aop[m].includes("ENUM")){
-      //       z = aop[m].trim().match("(?<=\.|^)[^.]+$")[0].slice(0,-1);
-      //       ek["ENUM"] = z;
-      //     }else if(aop[m])
-      //   }
-      // }
+      let enum_original_value;
 
-      enum_key = value.match("(?<=\.|^)[^.]+$")[0].slice(0,-1);
-      console.log(enum_key);
-      let enum_original_value = sourceJSON[enum_key];
-      console.log(enum_original_value);
-      enumeration = results[i][" Enumeration"];
+      if(value.includes("+")){
+        let aop = value.split("+");
+        console.log(aop);
+        let ek={};
+        for(let m=0;m<aop.length;m++){
+          let z;
+          if(aop[m].includes("ENUM")){
+            z = aop[m].trim().match("(?<=\.|^)[^.]+$")[0].slice(0,-1);
+            ek["ENUM"] = z;
+          }else if(aop[m].includes(".")){
+            ek["ENUM2"]=aop[m].trim().slice(1,);
+          }else{
+            ek["ENUM3"]=aop[m].trim().split("\"")[1];
+          }
+        }
+        enum_original_value=sourceJSON[ek["ENUM"]];
+        enumeration = results[i][" Enumeration"];
+        final_value = enumeration[enum_original_value].toString()+ek["ENUM3"]+sourceJSON[ek["ENUM2"]].toString();
+        console.log();
+        console.log(enum_original_value,enumeration,final_value,sourceJSON[ek["ENUM2"]]);
+      }else{
+        enum_key = value.match("(?<=\.|^)[^.]+$")[0].slice(0,-1);
+        console.log(enum_key);
+        enum_original_value = sourceJSON[enum_key];
+        console.log(enum_original_value);
+        enumeration = results[i][" Enumeration"];
+      }
 
-      
+
+
+      console.log();
 
       // let arr = enumeration.replaceAll(",\"",",");
 
@@ -178,7 +232,12 @@ fs.createReadStream('../../../data/sample_1/mapping.csv')
 
       specJSONString+=`\'${results[i].Target}\'`
       specJSONString+=":";
-      specJSONString+= enumGenerator(enumeration,i,enum_key);
+      if(!(final_value==="")){
+        specJSONString+= `\"${final_value}\"`;
+      }else{
+        specJSONString+= enumGenerator(enumeration,i,enum_key);
+      }
+
 
       // console.log(enum_obj[enum_original_value]);
       if(i==results.length-1){
