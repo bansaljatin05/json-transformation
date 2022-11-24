@@ -57,19 +57,29 @@ fs.createReadStream('../../../data/sample_1/mapping.csv')
         // console.log(specJSONString);
 
     }else if(value.includes('ENUM')){
+      
       let enum_key = value.match("(?<=\.|^)[^.]+$")[0].slice(0,-1);
 
       let enum_original_value = sourceJSON[enum_key];
 
       let enumeration = results[i][" Enumeration"];
 
-      console.log(enumeration);
-      console.log(typeof(enumeration));
 
-      let arr = enumeration.replaceAll("\",\"",",");
 
-      console.log(arr);
+      let arr = enumeration.replaceAll(",\"",",");
 
+      enum_obj=JSON.parse(arr)
+
+
+      specJSONString+=`\'${results[i].Target}\'`
+      specJSONString+=":";
+      specJSONString+= `\"${enum_obj[enum_original_value]}\"`;
+
+      console.log(enum_obj[enum_original_value]);
+      if(i==results.length-1){
+          break;
+      }
+      specJSONString+=",";
       // console.log(typeof());
 
       // let a = value.split("(")
@@ -80,10 +90,10 @@ fs.createReadStream('../../../data/sample_1/mapping.csv')
       }
     specJSONString+="}";
 
-    // console.log(specJSONString);
+    console.log(specJSONString);
 
     var expression = jsonata(specJSONString);
     var result = expression.evaluate(sourceJSON);
-    // console.log(result)
+    console.log(result)
 
   });
