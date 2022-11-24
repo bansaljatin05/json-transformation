@@ -5,11 +5,12 @@ const { uploadMappingService } = require('../services');
 const ApiError = require('../utils/ApiError');
 
 const uploadMapping = catchAsync(async (req, res) => {
-  const response = await uploadMappingService.uploadMapping(req.file.path);
-  if (!response) {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'This version already exists');
+  try {
+    const response = await uploadMappingService.uploadMapping(req.file.path, req.body.version);
+    res.send(`File uploaded successfully and can be used with for JSON transformation`);
+  } catch (error) {
+    res.send(error.statusCode, `${error.message}`);
   }
-  res.send(`File uploaded successfully and can be used with for JSON transformation}`);
 });
 
 module.exports = {

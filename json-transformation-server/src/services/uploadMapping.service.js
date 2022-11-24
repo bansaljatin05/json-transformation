@@ -20,7 +20,7 @@ const sourceJSON = {
   age: 29,
 };
 
-const uploadMapping = async (file) => {
+const uploadMapping = async (file, version) => {
   const results = [];
 
   const targetJSON = {};
@@ -143,18 +143,14 @@ const uploadMapping = async (file) => {
         specJSONString = specJSONString.slice(0, -1);
       }
       specJSONString += '}';
-      console.log(specJSONString);
-
-      try {
-        const version = TransformVersions.findOne({ version: 'v2' });
-        if (version) {
-          throw new ApiError(httpStatus.BAD_REQUEST, 'User not found');
-        }
-        return await TransformVersions.create({ specString: specJSONString, version: 'v2' });
-      } catch (error) {
-        console.log(error);
-      }
     });
+
+  const ver = await TransformVersions.findOne({ version: version });
+  // console.log(version);
+  if (ver) {
+    throw new ApiError(httpStatus.BAD_REQUEST, `Version ${version} already exists`);
+  }
+  return await TransformVersions.create({ specString: specJSONString, version: version });
 };
 
 module.exports = {
