@@ -9,6 +9,7 @@ const { bool } = require('joi');
 const results = [];
 const sourceJSON={
   "id": "122-34-6543",
+  "region": "NA",
   "firstName": "Leanne",
   "lastName": "Graham",
   "address": {
@@ -18,7 +19,47 @@ const sourceJSON={
       "zipcode": "92998-3874"
   },
   "occupation": "self-employed",
-  "age": 29
+  "age": 29,
+  "loanHistory": [
+      {
+          "princicpal": 40000,
+          "periodInYears": "3",
+          "rateOfInterest": 10,
+          "collateral": [
+              {
+                  "assetName": "property",
+                  "estimatedValues": 70000
+              }
+          ]
+      },
+      {
+          "princicpal": 140000,
+          "periodInYears": "4",
+          "rateOfInterest": 12,
+          "isCommercial": true,
+          "collateral": [
+              {
+                  "assetName": "condo",
+                  "estimatedValues": 30000
+              },
+              {
+                  "assetName": "vehicle",
+                  "estimatedValues": 3000
+              }
+          ]
+      },
+      {
+          "princicpal": 60000,
+          "periodInYears": "4",
+          "rateOfInterest": 12,
+          "collateral": [
+              {
+                  "assetName": "jewellery",
+                  "estimatedValues": 30000
+              }
+          ]
+      }
+  ]
 }
 const targetJSON={}
 let specJSONString="{";
@@ -146,25 +187,39 @@ fs.createReadStream('../../../data/sample_2/mapping.csv')
         // console.log(specJSONString);
 
     }else if(value.includes('ENUM')){
+      let enum_key;
+      let enumeration;
+      // if(value.includes("+")){
+      //   let aop = value.split("+");
+      //   console.log(aop);
+      //   let ek={};
+      //   for(let m=0;m<aop.length;m++){
+      //     let z;
+      //     if(aop[m].includes("ENUM")){
+      //       z = aop[m].trim().match("(?<=\.|^)[^.]+$")[0].slice(0,-1);
+      //       ek["ENUM"] = z;
+      //     }else if(aop[m])
+      //   }
+      // }
 
-      let enum_key = value.match("(?<=\.|^)[^.]+$")[0].slice(0,-1);
-
+      enum_key = value.match("(?<=\.|^)[^.]+$")[0].slice(0,-1);
+      console.log(enum_key);
       let enum_original_value = sourceJSON[enum_key];
+      console.log(enum_original_value);
+      enumeration = results[i][" Enumeration"];
 
-      let enumeration = results[i][" Enumeration"];
+      console.log();
 
+      // let arr = enumeration.replaceAll(",\"",",");
 
-
-      let arr = enumeration.replaceAll(",\"",",");
-
-      enum_obj=JSON.parse(arr)
+      // enum_obj=JSON.parse(arr)
 
 
       specJSONString+=`\'${results[i].Target}\'`
       specJSONString+=":";
-      specJSONString+= `\"${enum_obj[enum_original_value]}\"`;
+      specJSONString+= `\"${enumeration[enum_original_value]}\"`;
 
-      console.log(enum_obj[enum_original_value]);
+      // console.log(enum_obj[enum_original_value]);
       if(i==results.length-1){
           break;
       }
