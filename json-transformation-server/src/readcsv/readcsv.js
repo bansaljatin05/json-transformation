@@ -17,7 +17,7 @@ const sourceJSON={
       "city": "Gwenborough",
       "zipcode": "92998-3874"
   },
-  "occupation": "self-employed",
+  "occupation": "salaried",
   "age": 29
 }
 
@@ -25,7 +25,7 @@ const sourceJSON={
 const targetJSON={}
 let specJSONString="{";
 
-fs.createReadStream('../../../data/sample_2/mapping.csv')
+fs.createReadStream('../../../data/sample_1/mapping.csv')
   .pipe(csv())
   .on('data', (data) =>{
     let str = JSON.stringify(data);
@@ -148,25 +148,39 @@ fs.createReadStream('../../../data/sample_2/mapping.csv')
         // console.log(specJSONString);
 
     }else if(value.includes('ENUM')){
-      console.log(value)
-      let enum_key = value.match("(?<=\.|^)[^.]+$")[0].slice(0,-1);
+      let enum_key;
+      let enumeration;
+      // if(value.includes("+")){
+      //   let aop = value.split("+");
+      //   console.log(aop);
+      //   let ek={};
+      //   for(let m=0;m<aop.length;m++){
+      //     let z;
+      //     if(aop[m].includes("ENUM")){
+      //       z = aop[m].trim().match("(?<=\.|^)[^.]+$")[0].slice(0,-1);
+      //       ek["ENUM"] = z;
+      //     }else if(aop[m])
+      //   }
+      // }
 
+      enum_key = value.match("(?<=\.|^)[^.]+$")[0].slice(0,-1);
+      console.log(enum_key);
       let enum_original_value = sourceJSON[enum_key];
+      console.log(enum_original_value);
+      enumeration = results[i][" Enumeration"];
 
-      let enumeration = results[i][" Enumeration"];
+      
 
+      // let arr = enumeration.replaceAll(",\"",",");
 
+      // enum_obj=JSON.parse(arr)
 
-      let arr = enumeration.replaceAll(",\"",",");
-      console.log("hi",arr)
-      enum_obj=JSON.parse(arr)
-      //console.log(enumGenerator(enum_obj,i,enum_key))
 
       specJSONString+=`\'${results[i].Target}\'`
       specJSONString+=":";
-      specJSONString+= enumGenerator(enum_obj,i,enum_key);
+      specJSONString+= enumGenerator(enumeration,i,enum_key);
 
-      console.log(enum_obj[enum_original_value]);
+      // console.log(enum_obj[enum_original_value]);
       if(i==results.length-1){
           break;
       }
