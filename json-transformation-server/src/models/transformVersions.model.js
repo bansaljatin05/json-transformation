@@ -8,11 +8,6 @@ const transformVersionsSchema = mongoose.Schema({
     unique: true,
     trim: true,
   },
-  filePath: {
-    type: String,
-    required: true,
-    trim: true,
-  },
   specString: {
     type: String,
     required: true,
