@@ -4,6 +4,7 @@ const userRoute = require('./user.route');
 const docsRoute = require('./docs.route');
 const config = require('../../config/config');
 const transformRoute = require('./transform.route');
+const uploadMappingRoute = require('./uploadMapping.route');
 
 const router = express.Router();
 
@@ -19,6 +20,10 @@ const defaultRoutes = [
   {
     path: '/transform',
     route: transformRoute,
+  },
+  {
+    path: '/uploadMapping',
+    route: uploadMappingRoute,
   },
 ];
 
