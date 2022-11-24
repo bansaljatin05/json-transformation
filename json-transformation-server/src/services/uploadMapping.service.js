@@ -1,33 +1,101 @@
 const jsonata = require('jsonata');
+const httpStatus = require('http-status');
 const { TransformVersions } = require('../models');
 const csv = require('csv-parser');
 const fs = require('fs');
-const { NumberAddition, StringConcat, shift } = require('../utils/TransformUtils');
+const { NumberAddition, StringConcat, shift, enumGenerator } = require('../utils/TransformUtils');
+const ApiError = require('../utils/ApiError');
+
+const sourceJSON = {
+  id: '122-34-6543',
+  firstName: 'Leanne',
+  lastName: 'Graham',
+  address: {
+    street: 'Kulas Light',
+    suite: 'Apt. 556',
+    city: 'Gwenborough',
+    zipcode: '92998-3874',
+  },
+  occupation: 'self-employed',
+  age: 29,
+};
 
 const uploadMapping = async (file) => {
   const results = [];
-
-  const sourceJSON = {
-    id: '122-34-6543',
-    firstName: 'Leanne',
-    lastName: 'Graham',
-    address: {
-      street: 'Kulas Light',
-      suite: 'Apt. 556',
-      city: 'Gwenborough',
-      zipcode: '92998-3874',
-    },
-    occupation: 'self-employed',
-    age: 29,
-  };
 
   const targetJSON = {};
   let specJSONString = '{';
 
   fs.createReadStream(file)
     .pipe(csv())
-    .on('data', (data) => results.push(data))
-    .on('end', () => {
+    .on('data', (data) => {
+      let str = JSON.stringify(data);
+      if (str.includes('ENUM')) {
+        const x = {};
+        let enumerate = '';
+        for (let y in data) {
+          if (y === 'No.' || y === 'Target') {
+            x[y] = data[y];
+            continue;
+          } else {
+            if (y === ' Source') {
+              var i = data[y].indexOf(',');
+              var source = data[y].slice(0, i);
+
+              if (i === -1) {
+                x[' Source'] = data[y];
+              } else {
+                x[' Source'] = source;
+              }
+
+              if (!(i === -1)) {
+                enumerate += data[y].slice(i + 1) + ',';
+              }
+            } else {
+              enumerate += data[y] + ',';
+            }
+          }
+        }
+        let st = {};
+        if (enumerate.length !== 0) {
+          let ap = enumerate.split(',');
+          for (let k = 0; k < ap.length; k++) {
+            var po = ap[k];
+            let key = '';
+            let val = '';
+            let bool = 1;
+            for (let m = 0; m < po.length; m++) {
+              if (po[m] === '}') {
+                break;
+              }
+              if (po[m] === '"' || po[m] === '{') {
+                continue;
+              } else {
+                if (po[m] == ':') {
+                  bool = 0;
+                  continue;
+                }
+                if (bool === 1) {
+                  key += po[m];
+                } else {
+                  val += po[m];
+                }
+              }
+            }
+            if (key === '') {
+              continue;
+            }
+            st[key.trim()] = val.trim();
+          }
+        }
+        x[' Enumeration'] = st;
+        results.push(x);
+      } else {
+        results.push(data);
+      }
+    })
+    .on('end', async () => {
+      console.log(results);
       for (let i = 0; i < results.length; i++) {
         let value = results[i][' Source'];
         if (!value.includes('(')) {
@@ -52,31 +120,23 @@ const uploadMapping = async (file) => {
             break;
           }
           specJSONString += ',';
-
-          // console.log(specJSONString);
         } else if (value.includes('ENUM')) {
-          let enum_key = value.match('(?<=.|^)[^.]+$')[0].slice(0, -1);
+          let enum_key;
+          let enumeration;
 
-          let enum_original_value = sourceJSON[enum_key];
-
-          let enumeration = results[i][' Enumeration'];
-
-          let arr = enumeration.replaceAll(',"', ',');
-
-          enum_obj = JSON.parse(arr);
+          enum_key = value.match('(?<=.|^)[^.]+$')[0].slice(0, -1);
+          // let enum_original_value = sourceJSON[enum_key];
+          // console.log(enum_original_value);
+          enumeration = results[i][' Enumeration'];
 
           specJSONString += `\'${results[i].Target}\'`;
           specJSONString += ':';
-          specJSONString += `\"${enum_obj[enum_original_value]}\"`;
+          specJSONString += enumGenerator(enumeration, i, enum_key);
 
-          // console.log(enum_obj[enum_original_value]);
           if (i == results.length - 1) {
             break;
           }
           specJSONString += ',';
-          // console.log(typeof());
-
-          // let a = value.split("(")
         }
       }
       if (specJSONString[specJSONString.length - 1] == ',') {
@@ -85,14 +145,15 @@ const uploadMapping = async (file) => {
       specJSONString += '}';
       console.log(specJSONString);
 
-      TransformVersions.create({ specString: specJSONString, version: 'v1' });
-      // return specJSONString;
-
-      // console.log(specJSONString);
-
-      // var expression = jsonata(specJSONString);
-      // var result = expression.evaluate(sourceJSON);
-      // console.log(result);
+      try {
+        const version = TransformVersions.findOne({ version: 'v2' });
+        if (version) {
+          throw new ApiError(httpStatus.BAD_REQUEST, 'User not found');
+        }
+        return await TransformVersions.create({ specString: specJSONString, version: 'v2' });
+      } catch (error) {
+        console.log(error);
+      }
     });
 };
 

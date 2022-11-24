@@ -5,7 +5,8 @@ const { transformService } = require('../services');
 
 const transformJson = catchAsync(async (req, res) => {
   const transformedJson = await transformService.transformJson(req.body);
-  res.send();
+
+  res.send(transformedJson);
 });
 
 module.exports = {
