@@ -3,6 +3,7 @@ var jsonata = require("jsonata");
 const {NumberAddition,
   StringConcat,
   enumGenerator,
+  IfElseResolver,
   shift}=require('../utils/TransformUtils');
 const fs = require('fs');
 const { type } = require('os');
@@ -157,7 +158,7 @@ fs.createReadStream('../../../data/sample_2/mapping.csv')
   }
   )
   .on('end', () => {
-    console.log(results);
+    //console.log(results);
     for(let i=0 ;i<results.length;i++){
       let final_value="";
         let value = results[i][" Source"];
@@ -195,7 +196,7 @@ fs.createReadStream('../../../data/sample_2/mapping.csv')
 
       if(value.includes("+")){
         let aop = value.split("+");
-        console.log(aop);
+        //console.log(aop);
         let ek={};
         for(let m=0;m<aop.length;m++){
           let z;
@@ -210,20 +211,21 @@ fs.createReadStream('../../../data/sample_2/mapping.csv')
         }
         enum_original_value=sourceJSON[ek["ENUM"]];
         enumeration = results[i][" Enumeration"];
+        //console.log(enumeration)
         final_value = enumeration[enum_original_value].toString()+ek["ENUM3"]+sourceJSON[ek["ENUM2"]].toString();
-        console.log();
-        console.log(enum_original_value,enumeration,final_value,sourceJSON[ek["ENUM2"]]);
+        
+        //console.log(enum_original_value,enumeration,final_value,sourceJSON[ek["ENUM2"]]);
       }else{
         enum_key = value.match("(?<=\.|^)[^.]+$")[0].slice(0,-1);
-        console.log(enum_key);
+        //console.log(enum_key);
         enum_original_value = sourceJSON[enum_key];
-        console.log(enum_original_value);
+        //console.log(enum_original_value);
         enumeration = results[i][" Enumeration"];
       }
 
 
 
-      console.log();
+      //console.log();
 
       // let arr = enumeration.replaceAll(",\"",",");
 
@@ -248,13 +250,39 @@ fs.createReadStream('../../../data/sample_2/mapping.csv')
 
       // let a = value.split("(")
     }
+    else if(value.includes('IF')){
+      let target=results[i].Target
+      let nestedField=null
+      
+      var targetsArray=(results[i].Target).split(".")
+      if((results[i].Target).includes(".")){
+        target=targetsArray[0]
+        specJSONString+=`\'${target}\'`
+        specJSONString+=":";
+        nestedField=targetsArray[targetsArray.length-1]
+        specJSONString+=IfElseResolver(value,true,nestedField)
+      }
+      else{
+        specJSONString+=`\'${target}\'`
+      specJSONString+=":";
+        specJSONString+=IfElseResolver(value,false,nestedField)
+      }
+      //console.log(value)
+      
+      //console.log(IfElseResolver(value,false,null))
+      if(i==results.length-1){
+        break;
+    }
+    specJSONString+=",";
+      
+    }
 }
       if(specJSONString[specJSONString.length-1]==","){
         specJSONString=specJSONString.slice(0,-1)
       }
     specJSONString+="}";
 
-    console.log(specJSONString);
+    //console.log(specJSONString);
 
     var expression = jsonata(specJSONString);
     var result = expression.evaluate(sourceJSON);

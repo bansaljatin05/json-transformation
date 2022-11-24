@@ -1,5 +1,5 @@
 No.,Target, Source, Enumeration
-1, SSN, ENUM(region) + "-" + .id, {"NA": "1"",""EU" : 2"," "AS": 3"," "AF": 4}
+1, SSN, ENUM(.region) + "-" + .id, {"NA": "1"",""EU" : 2"," "AS": 3"," "AF": 4}
 2, CustomerFullName, .firstName + .lastName, -
 3, CustomerAddress, .address.street + .address.suite, -
 4, CustomerCity, .address.city, -

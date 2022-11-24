@@ -12,7 +12,7 @@ function shift() {
 
 }
 
-function IfElseResolver(string, fieldName, merge, nestedField) {
+function IfElseResolver(string, merge, nestedField) {
   string = string.replace("==", "=")
   var IfEndIndex = string.search('IF') + 2
   var ThenStartIndex = string.search('THEN')
@@ -48,12 +48,13 @@ function IfElseResolver(string, fieldName, merge, nestedField) {
   else {
     conditional = `${IfCondition}?${ThenStatement}`
   }
-  result += `$map(${fieldName},function(${iterator},$i,$a){
+  result += `$map(${parent},function(${iterator},$i,$a){
   ${!merge ? conditional :
-      `$merge([${iterator},{"${nestedField}": ${conditional}])`
+      `$merge([${iterator},{"${nestedField}": ${conditional}}])`
     }
 })`
-
+result+=".$string()"
+return result
 
 }
 
