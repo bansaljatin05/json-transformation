@@ -17,7 +17,7 @@ const sourceJSON = {
 
 const transformJson = async (reqBody) => {
   const transformedVersion = await TransformVersions.findOne({ version: reqBody.version });
-
+  console.log(reqBody.srcJson);
   var expression = jsonata(transformedVersion.specString);
   var result = expression.evaluate(reqBody.srcJson);
 
