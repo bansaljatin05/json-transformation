@@ -1,9 +1,7 @@
 const csv = require('csv-parser');
 var jsonata = require('jsonata');
-const { NumberAddition, StringConcat, enumGenerator, IfElseResolver, shift } = require('../utils/TransformUtils');
+const { enumGenerator, IfElseResolver } = require('../utils/TransformUtils');
 const fs = require('fs');
-const { type } = require('os');
-const { bool } = require('joi');
 const results = [];
 const sourceJSON = {
   id: '122-34-6543',
@@ -26,7 +24,7 @@ const sourceJSON = {
       collateral: [
         {
           assetName: 'property',
-          estimatedValues: 7000,
+          estimatedValues: 70000,
         },
       ],
     },
@@ -40,21 +38,29 @@ const sourceJSON = {
           assetName: 'condo',
           estimatedValues: 30000,
         },
+        {
+          assetName: 'vehicle',
+          estimatedValues: 3000,
+        },
       ],
     },
     {
       princicpal: 60000,
       periodInYears: '4',
       rateOfInterest: 12,
+      collateral: [
+        {
+          assetName: 'jewellery',
+          estimatedValues: 30000,
+        },
+      ],
     },
   ],
-  liquid_assets: 100000,
-  non_liquid_assets: 300000,
 };
-const targetJSON = {};
+
 let specJSONString = '{';
 
-fs.createReadStream('../../../data/sample_3/mapping.csv')
+fs.createReadStream('../../../data/sample_2/mapping.csv')
   .pipe(csv())
   .on('data', (data) => {
     let str = JSON.stringify(data);
@@ -146,21 +152,25 @@ fs.createReadStream('../../../data/sample_3/mapping.csv')
       if (!value.includes('(')) {
         value = value.trim();
         let a = value.split('+').map((v) => v.trim().replace('.', ''));
-
+        let sourceStr = '';
         let sourceObj;
-        if (typeof sourceJSON[a[0]] == 'number') {
-          sourceObj = NumberAddition(a);
-        } else {
-          sourceObj = StringConcat(a);
-        }
-
-        let ll = JSON.stringify(sourceObj);
+        sourceStr += `$type(${a[0]})="number"?$sum([${a}]):$join([${a}])`;
+        /*  if(typeof(sourceJSON[a[0]])=="number"){
+ 
+           sourceObj=NumberAddition(a);
+         }else{
+           sourceObj=StringConcat(a);
+         }
+ 
+         console.log("hhhhh",sourceStr) */
 
         targetJSON[results[i].Target] = `${JSON.parse(ll)}`;
 
+        //targetJSON[results[i].Target]=sourceObj
+
         specJSONString += `\'${results[i].Target}\'`;
         specJSONString += ':';
-        specJSONString += JSON.parse(ll);
+        specJSONString += sourceStr;
         if (i == results.length - 1) {
           break;
         }
@@ -170,7 +180,7 @@ fs.createReadStream('../../../data/sample_3/mapping.csv')
       } else if (value.includes('ENUM')) {
         let enum_key;
         let enumeration;
-        let enum_original_value;
+        //let enum_original_value;
         enumeration = results[i][' Enumeration'];
         if (value.includes('+')) {
           let fieldName = '';
@@ -185,7 +195,7 @@ fs.createReadStream('../../../data/sample_3/mapping.csv')
             if (aop[m].includes('ENUM')) {
               z = aop[m].trim().match('(?<=.|^)[^.]+$')[0].slice(0, -1);
               ek['ENUM'] = z;
-              console.log(enumGenerator(enumeration, i, z));
+              //console.log(enumGenerator(enumeration,i,z))
               fieldName += enumGenerator(enumeration, i, z);
             } else if (aop[m].includes('.')) {
               ek['ENUM2'] = aop[m].trim().slice(1);
@@ -197,8 +207,8 @@ fs.createReadStream('../../../data/sample_3/mapping.csv')
             }
           }
 
-          console.log('gggg', fieldName);
-          enum_original_value = sourceJSON[ek['ENUM']];
+          //console.log('gggg',fieldName)
+          //enum_original_value=sourceJSON[ek["ENUM"]];
 
           //console.log(enumeration)
           //final_value = enumeration[enum_original_value].toString()+ek["ENUM3"]+sourceJSON[ek["ENUM2"]].toString();
@@ -207,7 +217,7 @@ fs.createReadStream('../../../data/sample_3/mapping.csv')
         } else {
           enum_key = value.match('(?<=.|^)[^.]+$')[0].slice(0, -1);
           //console.log(enum_key);
-          enum_original_value = sourceJSON[enum_key];
+          //enum_original_value = sourceJSON[enum_key];
           //console.log(enum_original_value);
           enumeration = results[i][' Enumeration'];
         }
