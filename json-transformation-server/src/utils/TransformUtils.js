@@ -53,7 +53,7 @@ function IfElseResolver(string, merge, nestedField) {
       `$merge([${iterator},{"${nestedField}": ${conditional}}])`
     }
 })`
-result+=".$string()"
+//result+=".$string()"
 return result
 
 }

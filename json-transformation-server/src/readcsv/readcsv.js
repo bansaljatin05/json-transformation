@@ -30,7 +30,7 @@ const sourceJSON={
           "collateral": [
               {
                   "assetName": "property",
-                  "estimatedValues": 70000
+                  "estimatedValues": 7000
               }
           ]
       },
@@ -43,30 +43,22 @@ const sourceJSON={
               {
                   "assetName": "condo",
                   "estimatedValues": 30000
-              },
-              {
-                  "assetName": "vehicle",
-                  "estimatedValues": 3000
               }
           ]
       },
       {
           "princicpal": 60000,
           "periodInYears": "4",
-          "rateOfInterest": 12,
-          "collateral": [
-              {
-                  "assetName": "jewellery",
-                  "estimatedValues": 30000
-              }
-          ]
+          "rateOfInterest": 12
       }
-  ]
+  ],
+  "liquid_assets": 100000,
+  "non_liquid_assets": 300000
 }
 const targetJSON={}
 let specJSONString="{";
 
-fs.createReadStream('../../../data/sample_2/mapping.csv')
+fs.createReadStream('../../../data/sample_3/mapping.csv')
   .pipe(csv())
   .on('data', (data) =>{
     let str = JSON.stringify(data);
@@ -193,27 +185,38 @@ fs.createReadStream('../../../data/sample_2/mapping.csv')
       let enum_key;
       let enumeration;
       let enum_original_value;
-
+      enumeration = results[i][" Enumeration"];
       if(value.includes("+")){
+        let fieldName=''
         let aop = value.split("+");
         //console.log(aop);
         let ek={};
         for(let m=0;m<aop.length;m++){
           let z;
+          if(m!==0){
+            fieldName+="&"
+          }
           if(aop[m].includes("ENUM")){
             z = aop[m].trim().match("(?<=\.|^)[^.]+$")[0].slice(0,-1);
             ek["ENUM"] = z;
+            console.log(enumGenerator(enumeration,i,z))
+            fieldName+=enumGenerator(enumeration,i,z)
           }else if(aop[m].includes(".")){
             ek["ENUM2"]=aop[m].trim().slice(1,);
+            
+            fieldName+=aop[m].trim().slice(1,)
           }else{
             ek["ENUM3"]=aop[m].trim().split("\"")[1];
+            fieldName+=aop[m].trim()
           }
         }
+
+        console.log('gggg',fieldName)
         enum_original_value=sourceJSON[ek["ENUM"]];
-        enumeration = results[i][" Enumeration"];
-        //console.log(enumeration)
-        final_value = enumeration[enum_original_value].toString()+ek["ENUM3"]+sourceJSON[ek["ENUM2"]].toString();
         
+        //console.log(enumeration)
+        //final_value = enumeration[enum_original_value].toString()+ek["ENUM3"]+sourceJSON[ek["ENUM2"]].toString();
+        final_value=fieldName
         //console.log(enum_original_value,enumeration,final_value,sourceJSON[ek["ENUM2"]]);
       }else{
         enum_key = value.match("(?<=\.|^)[^.]+$")[0].slice(0,-1);
@@ -235,7 +238,7 @@ fs.createReadStream('../../../data/sample_2/mapping.csv')
       specJSONString+=`\'${results[i].Target}\'`
       specJSONString+=":";
       if(!(final_value==="")){
-        specJSONString+= `\"${final_value}\"`;
+        specJSONString+= final_value;
       }else{
         specJSONString+= enumGenerator(enumeration,i,enum_key);
       }
