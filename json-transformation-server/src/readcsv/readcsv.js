@@ -164,7 +164,7 @@ fs.createReadStream('../../../data/sample_2/mapping.csv')
  
          console.log("hhhhh",sourceStr) */
 
-        targetJSON[results[i].Target] = `${JSON.parse(ll)}`;
+        // targetJSON[results[i].Target] = `${JSON.parse(ll)}`;
 
         //targetJSON[results[i].Target]=sourceObj
 

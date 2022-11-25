@@ -57,17 +57,19 @@ const uploadMapping = async (file, version) => {
   const results = [];
 
   const targetJSON = {};
-  let specJSONString = '{';
-  console.log(JSON.stringify(sourceJSON));
+  var specJSONString = '{';
 
   fs.createReadStream(file)
     .pipe(csv())
     .on('data', (data) => {
+      console.log(data);
       let str = JSON.stringify(data);
       if (str.includes('ENUM')) {
         const x = {};
         let enumerate = '';
+        // console.log(data);
         for (let y in data) {
+          // console.log(y,data[y]);
           if (y === 'No.' || y === 'Target') {
             x[y] = data[y];
             continue;
@@ -75,8 +77,10 @@ const uploadMapping = async (file, version) => {
             if (y === ' Source') {
               var i = data[y].indexOf(',');
               var source = data[y].slice(0, i);
-
+              // console.log(data[y],source);
+              // console.log(i,data[y].length-1);
               if (i === -1) {
+                // console.log("hu");
                 x[' Source'] = data[y];
               } else {
                 x[' Source'] = source;
@@ -84,15 +88,19 @@ const uploadMapping = async (file, version) => {
 
               if (!(i === -1)) {
                 enumerate += data[y].slice(i + 1) + ',';
+                // console.log("ppm",enumerate);
               }
             } else {
               enumerate += data[y] + ',';
             }
           }
         }
+        // console.log("enuma",enumerate);
         let st = {};
         if (enumerate.length !== 0) {
+          // console.log(enumerate);
           let ap = enumerate.split(',');
+          // console.log(ap);
           for (let k = 0; k < ap.length; k++) {
             var po = ap[k];
             let key = '';
@@ -122,8 +130,16 @@ const uploadMapping = async (file, version) => {
             st[key.trim()] = val.trim();
           }
         }
+        // console.log(st);
         x[' Enumeration'] = st;
         results.push(x);
+        // console.log(x);
+        // console.log(arr);
+
+        // for(let i=0;i<arr.length;i++){
+        //   let a = arr[i];
+
+        // }
       } else {
         results.push(data);
       }
@@ -135,21 +151,25 @@ const uploadMapping = async (file, version) => {
         if (!value.includes('(')) {
           value = value.trim();
           let a = value.split('+').map((v) => v.trim().replace('.', ''));
-
+          let sourceStr = '';
           let sourceObj;
-          if (typeof sourceJSON[a[0]] == 'number') {
-            sourceObj = NumberAddition(a);
-          } else {
-            sourceObj = StringConcat(a);
-          }
+          sourceStr += `$type(${a[0]})="number"?$sum([${a}]):$join([${a}])`;
+          /*  if(typeof(sourceJSON[a[0]])=="number"){
+ 
+           sourceObj=NumberAddition(a);
+         }else{
+           sourceObj=StringConcat(a);
+         }
+ 
+         console.log("hhhhh",sourceStr) */
 
-          let ll = JSON.stringify(sourceObj);
+          // targetJSON[results[i].Target] = `${JSON.parse(ll)}`;
 
-          targetJSON[results[i].Target] = `${JSON.parse(ll)}`;
+          //targetJSON[results[i].Target]=sourceObj
 
           specJSONString += `\'${results[i].Target}\'`;
           specJSONString += ':';
-          specJSONString += JSON.parse(ll);
+          specJSONString += sourceStr;
           if (i == results.length - 1) {
             break;
           }
@@ -159,33 +179,44 @@ const uploadMapping = async (file, version) => {
         } else if (value.includes('ENUM')) {
           let enum_key;
           let enumeration;
-          let enum_original_value;
-
+          //let enum_original_value;
+          enumeration = results[i][' Enumeration'];
           if (value.includes('+')) {
+            let fieldName = '';
             let aop = value.split('+');
             //console.log(aop);
             let ek = {};
             for (let m = 0; m < aop.length; m++) {
               let z;
+              if (m !== 0) {
+                fieldName += '&';
+              }
               if (aop[m].includes('ENUM')) {
                 z = aop[m].trim().match('(?<=.|^)[^.]+$')[0].slice(0, -1);
                 ek['ENUM'] = z;
+                //console.log(enumGenerator(enumeration,i,z))
+                fieldName += enumGenerator(enumeration, i, z);
               } else if (aop[m].includes('.')) {
                 ek['ENUM2'] = aop[m].trim().slice(1);
+
+                fieldName += aop[m].trim().slice(1);
               } else {
                 ek['ENUM3'] = aop[m].trim().split('"')[1];
+                fieldName += aop[m].trim();
               }
             }
-            enum_original_value = sourceJSON[ek['ENUM']];
-            enumeration = results[i][' Enumeration'];
-            //console.log(enumeration)
-            final_value = enumeration[enum_original_value].toString() + ek['ENUM3'] + sourceJSON[ek['ENUM2']].toString();
 
+            //console.log('gggg',fieldName)
+            //enum_original_value=sourceJSON[ek["ENUM"]];
+
+            //console.log(enumeration)
+            //final_value = enumeration[enum_original_value].toString()+ek["ENUM3"]+sourceJSON[ek["ENUM2"]].toString();
+            final_value = fieldName;
             //console.log(enum_original_value,enumeration,final_value,sourceJSON[ek["ENUM2"]]);
           } else {
             enum_key = value.match('(?<=.|^)[^.]+$')[0].slice(0, -1);
             //console.log(enum_key);
-            enum_original_value = sourceJSON[enum_key];
+            //enum_original_value = sourceJSON[enum_key];
             //console.log(enum_original_value);
             enumeration = results[i][' Enumeration'];
           }
@@ -199,7 +230,7 @@ const uploadMapping = async (file, version) => {
           specJSONString += `\'${results[i].Target}\'`;
           specJSONString += ':';
           if (!(final_value === '')) {
-            specJSONString += `\"${final_value}\"`;
+            specJSONString += final_value;
           } else {
             specJSONString += enumGenerator(enumeration, i, enum_key);
           }
@@ -240,15 +271,17 @@ const uploadMapping = async (file, version) => {
       if (specJSONString[specJSONString.length - 1] == ',') {
         specJSONString = specJSONString.slice(0, -1);
       }
-      specJSONString += '}';
-    });
 
+      specJSONString += '}';
+
+      await TransformVersions.create({ specString: specJSONString, version: version });
+    });
   const ver = await TransformVersions.findOne({ version: version });
   // console.log(version);
-  if (ver) {
-    throw new ApiError(httpStatus.BAD_REQUEST, `Version ${version} already exists`);
-  }
-  return await TransformVersions.create({ specString: specJSONString, version: version });
+  // if (ver) {
+  //   throw new ApiError(httpStatus.BAD_REQUEST, `Version ${version} already exists`);
+  // }
+  // return await TransformVersions.create({ specString: specJSONString, version: version });
 };
 
 module.exports = {
